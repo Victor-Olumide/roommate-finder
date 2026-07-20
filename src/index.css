@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-30px) rotate(90deg);
+  }
+  50% {
+    transform: translateY(-60px) rotate(180deg);
+  }
+  75% {
+    transform: translateY(-30px) rotate(270deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(30px) rotate(-90deg);
+  }
+  50% {
+    transform: translateY(60px) rotate(-180deg);
+  }
+  75% {
+    transform: translateY(30px) rotate(-270deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float 8s ease-in-out infinite;
+}
+.animate-float-medium {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-float-fast {
+  animation: float 4s ease-in-out infinite;
+}
+.animate-float-reverse-slow {
+  animation: float-reverse 10s ease-in-out infinite;
+}
+.animate-float-reverse-medium {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+.animate-float-reverse-fast {
+  animation: float-reverse 5s ease-in-out infinite;
+}
+.animate-delay-2 {
+  animation-delay: 2s;
+}
+.animate-delay-4 {
+  animation-delay: 4s;
+}
+.animate-delay-6 {
+  animation-delay: 6s;
+}
