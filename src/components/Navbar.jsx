@@ -2,7 +2,7 @@ import Sidebar from "./Sidebar";
 
 export default function Navbar() {
   return (
-    <div className="bg-white shadow-lg w-screen overflow-x-hidden p-4 justify-between gap-6 text-blue-800 flex items-center flex-row lg:px-8">
+    <div className="bg-white shadow-lg w-screen overflow-x-hidden p-4 justify-between gap-6 text-blue-800 flex items-center flex-row lg:px-8 text-xs md:text-base sticky top-0 z-50">
         <Sidebar />
 
         <div className="flex flex-row items-center gap-2">
