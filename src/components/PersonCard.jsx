@@ -1,49 +1,50 @@
 import { Link } from "react-router-dom";
+import { HiMapPin } from "react-icons/hi2";
 
 export default function PersonCard({
   name = "Full Name",
-  hostel = "Male Hall 1",
+  hostel = "Male Hostel 1",
   room = "A55",
   image = "",
 }) {
+  const initial = name ? name.charAt(0).toUpperCase() : "?";
+
   return (
     <Link
       to={`/room/${encodeURIComponent(hostel)}/${encodeURIComponent(room)}`}
-      className="block w-full max-w-[150px] bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-100 transition-all duration-300 overflow-hidden group"
+      className="group block w-full max-w-[180px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
     >
-      {/* Profile Image */}
-      <div className="aspect-square w-full overflow-hidden bg-neutral-200 flex items-center justify-center">
+      {/* Image / Avatar Container */}
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
         {image ? (
           <img
             src={image}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <span className="text-3xl font-bold text-gray-400 group-hover:scale-105 transition-transform duration-300 select-none">
-            {name.charAt(0).toUpperCase()}
-          </span>
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700">
+            <span className="text-4xl font-black text-white select-none">
+              {initial}
+            </span>
+          </div>
         )}
+
+        {/* Room Badge Overlay */}
+        <span className="absolute right-2.5 top-2.5 rounded-full bg-white/90 backdrop-blur-md px-2.5 py-0.5 text-[11px] font-bold text-gray-800 shadow-sm border border-gray-200/50">
+          Room {room}
+        </span>
       </div>
 
       {/* Details */}
-      <div className="flex flex-col gap-1.5 p-3">
-        <h1 className="text-sm sm:text-base font-bold text-gray-800 leading-tight truncate">
+      <div className="space-y-1 p-3">
+        <h3 className="truncate text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
           {name}
-        </h1>
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-3.5 w-3.5 shrink-0 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span className="truncate">{hostel}, Room {room}</span>
+        </h3>
+
+        <div className="flex items-center gap-1 text-xs text-gray-500">
+          <HiMapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+          <span className="truncate font-medium">{hostel}</span>
         </div>
       </div>
     </Link>

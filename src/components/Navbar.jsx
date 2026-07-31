@@ -1,14 +1,29 @@
+import { Link } from "react-router-dom";
 import Sidebar from "./Sidebar";
 
 export default function Navbar() {
   return (
-    <div className="bg-white shadow-lg w-screen overflow-x-hidden p-4 justify-between gap-6 text-blue-800 flex items-center flex-row lg:px-8 text-xs md:text-base sticky top-0 z-50">
+    <header className="sticky top-0 z-40 w-full bg-white shadow-md px-4 py-3 sm:px-6 lg:px-8 text-blue-800 text-xs md:text-base flex items-center justify-between">
+      {/* Sidebar Drawer Trigger */}
+      <div className="flex items-center">
         <Sidebar />
-
-        <div className="flex flex-row items-center gap-2">
-          <h1 className="font-bold">AFE BABALOLA UNIVERSITY</h1>
-          <img src="/abuad.png" alt="ABUAD" width={30} />
-        </div>
       </div>
+
+      <Link 
+        to="/" 
+        className="flex flex-row items-center gap-2 hover:opacity-90 transition-opacity"
+      >
+        <h1 className="font-bold text-xs sm:text-sm md:text-base tracking-wide text-right sm:text-left">
+          AFE BABALOLA UNIVERSITY
+        </h1>
+        <img 
+          src="/abuad.png" 
+          alt="ABUAD Logo" 
+          width={30} 
+          height={30} 
+          className="object-contain shrink-0" 
+        />
+      </Link>
+    </header>
   );
 }
