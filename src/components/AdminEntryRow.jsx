@@ -2,9 +2,11 @@ import { useState } from "react";
 import { FaPhone } from "react-icons/fa6";
 import { RiWhatsappFill } from "react-icons/ri";
 import { HiPencilSquare, HiTrash, HiXMark, HiCheck, HiPhoto } from "react-icons/hi2";
-import { API } from "../api";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { db, auth } from "../firebase";
+import { compressImage } from "../utils/compressImage";
 
-export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showToast }) {
+export default function AdminEntryRow({ entry, onDelete, showToast }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -16,27 +18,20 @@ export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showTo
     phone: entry.phone || "",
     whatsapp: entry.whatsapp || "",
     bio: entry.bio || "",
-    image: entry.image || "",
   });
 
+  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(entry.image || "");
 
-  // Handle image pick with 2MB validation limit
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("error", "Profile photo must be smaller than 2MB");
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("error", "Profile photo must be smaller than 5MB");
       return;
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-      setForm((f) => ({ ...f, image: reader.result }));
-    };
-    reader.readAsDataURL(file);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const handleSave = async () => {
@@ -44,33 +39,37 @@ export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showTo
       showToast("error", "Name, Hostel, and Room are required");
       return;
     }
-
     setSaving(true);
     try {
-      const res = await fetch(`${API}/entries/${entry.id || entry._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...form,
-          hostel: form.hostel.trim(),
-          room: form.room.trim().toUpperCase(),
-        }),
-      });
-      const json = await res.json();
+      const cleanedHostel = form.hostel.trim();
+      const cleanedRoom = form.room.trim().toUpperCase();
+      const cleanedName = form.name.trim();
 
-      if (json.success) {
-        onUpdate(json.data);
-        setIsEditing(false);
-        showToast("success", "Entry updated successfully");
-      } else {
-        showToast("error", json.message || "Update failed");
+      // Compress new image to base64 if picked, else keep existing
+      let imageUrl = entry.image || "";
+      if (imageFile) {
+        imageUrl = await compressImage(imageFile);
       }
+
+      await updateDoc(doc(db, "entries", entry.id), {
+        name: cleanedName,
+        hostel: cleanedHostel,
+        room: cleanedRoom,
+        phone: form.phone.trim(),
+        whatsapp: form.whatsapp.trim(),
+        bio: form.bio.trim(),
+        image: imageUrl,
+        hostelLower: cleanedHostel.toLowerCase(),
+        roomLower: cleanedRoom.toLowerCase(),
+        nameLower: cleanedName.toLowerCase(),
+      });
+
+      setImageFile(null);
+      setIsEditing(false);
+      showToast("success", "Entry updated successfully");
     } catch (err) {
       console.error("Update Error:", err);
-      showToast("error", "Network error while saving changes");
+      showToast("error", "Failed to update entry");
     } finally {
       setSaving(false);
     }
@@ -78,24 +77,12 @@ export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showTo
 
   const handleDelete = async () => {
     try {
-      const res = await fetch(`${API}/entries/${entry.id || entry._id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const json = await res.json();
-
-      if (json.success) {
-        onDelete(entry.id || entry._id);
-        showToast("success", "Entry removed from system");
-      } else {
-        showToast("error", json.message || "Delete failed");
-      }
+      await deleteDoc(doc(db, "entries", entry.id));
+      onDelete(entry.id);
+      showToast("success", "Entry removed from system");
     } catch (err) {
       console.error("Delete Error:", err);
-      showToast("error", "Network error while deleting entry");
+      showToast("error", "Failed to delete entry");
     }
   };
 
@@ -103,7 +90,7 @@ export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showTo
     <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden transition-all">
       {/* Default Row Display */}
       <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        
+
         {/* Student Avatar & Quick Details */}
         <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
           <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center text-gray-400 font-bold text-lg border border-gray-200/50">
@@ -119,7 +106,6 @@ export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showTo
             <p className="text-xs text-blue-600 font-bold truncate">
               {entry.hostel} • Room {entry.room}
             </p>
-            
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
               {entry.phone && (
                 <span className="inline-flex items-center gap-1">
@@ -268,7 +254,7 @@ export default function AdminEntryRow({ entry, token, onUpdate, onDelete, showTo
                     type="button"
                     onClick={() => {
                       setImagePreview("");
-                      setForm((f) => ({ ...f, image: "" }));
+                      setImageFile(null);
                     }}
                     className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 hover:opacity-100 transition-opacity"
                   >

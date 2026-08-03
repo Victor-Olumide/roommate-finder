@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import { API } from "../api";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -12,31 +15,33 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!password.trim()) return;
-
+    if (!email.trim() || !password.trim()) return;
     setLoading(true);
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API}/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      const json = await res.json();
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
 
-      // Flexible check for token field naming
-      const token = json.token || json.adminToken || (json.success ? "authenticated" : null);
-
-      if (json.success && token) {
-        sessionStorage.setItem("admin_token", token);
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        setErrorMsg(json.message || "Incorrect admin password");
+      // Verify the signed-in user has admin role in Firestore
+      const adminDoc = await getDoc(doc(db, "admins", cred.user.uid));
+      if (!adminDoc.exists() || adminDoc.data().role !== "admin") {
+        await auth.signOut();
+        setErrorMsg("Your account does not have admin access.");
+        return;
       }
+
+      // Store UID as the session token (used by ProtectedAdminRoute)
+      sessionStorage.setItem("admin_token", cred.user.uid);
+      navigate("/admin/dashboard", { replace: true });
     } catch (err) {
-      console.error("Login Error:", err);
-      setErrorMsg("Network error. Could not reach server.");
+      console.error("Admin login error:", err);
+      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+        setErrorMsg("Incorrect email or password.");
+      } else if (err.code === "auth/too-many-requests") {
+        setErrorMsg("Too many attempts. Try again later.");
+      } else {
+        setErrorMsg("Login failed. Check your connection.");
+      }
     } finally {
       setLoading(false);
     }
@@ -45,14 +50,14 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 sm:p-8 border border-gray-100">
-        
+
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
             <IoLockClosedOutline className="text-2xl" />
           </div>
           <h1 className="text-xl font-black text-gray-900">Admin Portal</h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            Enter secret key to access dashboard
+            Sign in with your admin account
           </p>
         </div>
 
@@ -62,15 +67,24 @@ export default function AdminLogin() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="email"
+            placeholder="Admin email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            autoFocus
+            required
+          />
+
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Admin password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3.5 pr-10 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono"
-              autoFocus
+              className="w-full p-3.5 pr-10 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               required
             />
             <button
@@ -84,10 +98,10 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            disabled={!password.trim() || loading}
+            disabled={!email.trim() || !password.trim() || loading}
             className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-sm rounded-xl transition-all shadow-md disabled:opacity-50"
           >
-            {loading ? "Authenticating..." : "Unlock Dashboard"}
+            {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
 
