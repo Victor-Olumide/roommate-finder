@@ -1,41 +1,29 @@
 import { useState, useEffect, useMemo } from "react";
 import PersonCard from "../components/PersonCard";
-import { API } from "../api";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function Roommate() {
   const [searchQuery, setSearchQuery] = useState("");
   const [allRoommates, setAllRoommates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch entries from API
+  // Subscribe to Firestore entries in real-time
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchEntries = async (isInitial = false) => {
-      if (isInitial) setLoading(true);
-      try {
-        const res = await fetch(`${API}/entries`);
-        const json = await res.json();
-        if (json.success && isMounted) {
-          setAllRoommates(json.data || []);
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
-      } finally {
-        if (isMounted && isInitial) setLoading(false);
+    setLoading(true);
+    const q = query(collection(db, "entries"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        setAllRoommates(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Firestore error:", err);
+        setLoading(false);
       }
-    };
-
-    // Initial load
-    fetchEntries(true);
-
-    // Auto refresh every 5s without triggering loading spinner
-    const interval = setInterval(() => fetchEntries(false), 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    );
+    return () => unsubscribe();
   }, []);
 
   // Filter by name, hostel, or room number

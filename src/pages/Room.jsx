@@ -1,38 +1,29 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { API } from "../api";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function Room() {
   const [searchQuery, setSearchQuery] = useState("");
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch entries from API
+  // Subscribe to Firestore entries in real-time
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchEntries = async (isInitial = false) => {
-      if (isInitial) setLoading(true);
-      try {
-        const res = await fetch(`${API}/entries`);
-        const json = await res.json();
-        if (json.success && isMounted) {
-          setAllEntries(json.data || []);
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
-      } finally {
-        if (isMounted && isInitial) setLoading(false);
+    setLoading(true);
+    const q = query(collection(db, "entries"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        setAllEntries(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Firestore error:", err);
+        setLoading(false);
       }
-    };
-
-    fetchEntries(true);
-    const interval = setInterval(() => fetchEntries(false), 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    );
+    return () => unsubscribe();
   }, []);
 
   // Aggregate room map (Hostel + Room unique grouping)
@@ -46,6 +37,7 @@ export default function Room() {
           hostel: entry.hostel,
           room: entry.room,
           occupants: 0,
+          capacity: entry.roomCapacity || 4,
         });
       }
       roomMap.get(key).occupants++;
@@ -215,14 +207,17 @@ export default function Room() {
                     >
                       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">
-                            Room Number
-                          </p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Room Number</p>
                           <p className="text-2xl font-black">{room.room}</p>
                         </div>
-                        <span className="text-xs font-semibold bg-white/20 backdrop-blur-xs px-2.5 py-1 rounded-full">
-                          {room.occupants} {room.occupants === 1 ? "person" : "people"}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold bg-white/20 backdrop-blur-xs px-2.5 py-1 rounded-full block">
+                            {room.occupants} / {room.capacity}
+                          </span>
+                          <p className="text-[10px] opacity-70 mt-1">
+                            {room.occupants >= room.capacity ? "Full" : `${room.capacity - room.occupants} spot${room.capacity - room.occupants !== 1 ? "s" : ""} left`}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="p-4 flex flex-col justify-between gap-3">
