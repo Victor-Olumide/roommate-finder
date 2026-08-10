@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
+import { HiArrowLeft, HiShieldCheck } from "react-icons/hi2";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -30,7 +31,7 @@ export default function AdminLogin() {
         return;
       }
 
-      // Store UID as the session token (used by ProtectedAdminRoute)
+      // Store UID as the session token
       sessionStorage.setItem("admin_token", cred.user.uid);
       navigate("/admin/dashboard", { replace: true });
     } catch (err) {
@@ -48,69 +49,84 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 sm:p-8 border border-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/60 via-slate-50 to-white text-slate-800 flex items-center justify-center p-4 sm:p-6 font-sans relative overflow-hidden">
+      
+      {/* Background Lights */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-200/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-200/40 rounded-full blur-3xl pointer-events-none" />
 
+      <div className="w-full max-w-sm bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/50 p-6 sm:p-8 relative z-10">
+
+        {/* Portal Header */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-            <IoLockClosedOutline className="text-2xl" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-100/80 text-blue-600 border border-blue-200 flex items-center justify-center mx-auto mb-3 shadow-xs">
+            <IoLockClosedOutline className="text-xl" />
           </div>
-          <h1 className="text-xl font-black text-gray-900">Admin Portal</h1>
-          <p className="text-xs text-gray-500 mt-1 font-medium">
-            Sign in with your admin account
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold mb-2">
+            <HiShieldCheck className="text-blue-600 text-xs" /> Admin Portal
+          </div>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Sign In</h1>
+          <p className="text-xs text-slate-500 mt-1 font-normal">
+            Enter authorized credentials to manage listings.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold text-center">
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-600 text-xs font-semibold text-center">
             {errorMsg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="email"
-            placeholder="Admin email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-            autoFocus
-            required
-          />
-
-          <div className="relative">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Email</label>
             <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3.5 pr-10 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              type="email"
+              placeholder="admin email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3.5 text-xs bg-slate-50/80 border border-slate-200/80 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-900 placeholder-slate-400"
+              autoFocus
               required
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-            >
-              {showPassword ? <IoEyeOffOutline className="text-lg" /> : <IoEyeOutline className="text-lg" />}
-            </button>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3.5 pr-10 text-xs bg-slate-50/80 border border-slate-200/80 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-900 placeholder-slate-400"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
+              >
+                {showPassword ? <IoEyeOffOutline className="text-base" /> : <IoEyeOutline className="text-base" />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={!email.trim() || !password.trim() || loading}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-sm rounded-xl transition-all shadow-md disabled:opacity-50"
+            className="w-full mt-2 py-3.5 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/25 transition-all disabled:opacity-40"
           >
-            {loading ? "Signing in…" : "Sign In"}
+            {loading ? "Authenticating…" : "Sign In to Portal"}
           </button>
         </form>
 
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="w-full mt-5 text-xs font-semibold text-gray-400 hover:text-gray-600 text-center block"
+          className="w-full mt-5 inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors"
         >
-          ← Return to Public Website
+          <HiArrowLeft className="text-sm" /> Return to Public Website
         </button>
       </div>
     </div>
