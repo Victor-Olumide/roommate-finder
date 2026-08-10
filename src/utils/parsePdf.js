@@ -1,6 +1,6 @@
 import * as pdfjsLib from "pdfjs-dist";
+import { normalizeHostelName } from "./hostelData";
 
-// Fix for Vite: Use unpkg ES module worker URL matching pdfjs version
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url
@@ -12,7 +12,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 export async function parseAllocationPdf(file) {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
     
@@ -27,7 +26,7 @@ export async function parseAllocationPdf(file) {
 
     const cleanText = rawText.replace(/\s+/g, " ");
 
-    // Strict regex matchers with lookaheads
+    // Regex extraction
     const nameMatch = cleanText.match(/ROOM ALLOCATION FOR\s+(.*?)\s+(?:PERSONAL|HOSTEL|DETAILS)/i);
     const hostelMatch = cleanText.match(/Hostel Name\s+(.*?)(?=\s+(?:Floor|Wing|Programme|College|Level|Gender|Room|Session|No\.|\d{3}L|$))/i);
     const roomMatch = cleanText.match(/Room Number\s+([A-Z0-9]+)/i);
@@ -37,9 +36,11 @@ export async function parseAllocationPdf(file) {
     const wingMatch = cleanText.match(/Wing\s+([A-Z0-9]+)/i);
     const capacityMatch = cleanText.match(/(?:Hostel Type\s+(\d+)|No\.\s*of\s*Occupa\s*(\d+))/i);
 
+    const rawHostel = hostelMatch ? hostelMatch[1].trim() : "";
+
     return {
       name: nameMatch ? nameMatch[1].trim() : "",
-      hostel: hostelMatch ? hostelMatch[1].trim() : "",
+      hostel: normalizeHostelName(rawHostel), // Standardizes PDF extraction
       room: roomMatch ? roomMatch[1].trim() : "",
       department: deptMatch ? deptMatch[1].trim() : "",
       level: levelMatch ? levelMatch[1].trim() : "",
