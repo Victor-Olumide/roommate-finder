@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { FaPhone } from "react-icons/fa6";
+import { FaPhone, FaGraduationCap, FaLayerGroup } from "react-icons/fa6";
 import { RiWhatsappFill } from "react-icons/ri";
 
-// Helper to format Nigerian WhatsApp numbers cleanly into international format
 function formatWhatsAppUrl(number) {
+  if (!number) return "";
   let cleaned = number.replace(/[^0-9]/g, "");
   if (cleaned.startsWith("0")) {
     cleaned = "234" + cleaned.slice(1);
@@ -12,7 +12,6 @@ function formatWhatsAppUrl(number) {
 }
 
 function Modal({ entry, onClose }) {
-  // Close on Escape key
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") onClose();
@@ -21,7 +20,6 @@ function Modal({ entry, onClose }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  // Prevent body scroll while open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -29,7 +27,7 @@ function Modal({ entry, onClose }) {
     };
   }, []);
 
-  const { name, hostel, room, phone, whatsapp, bio, image } = entry;
+  const { name, hostel, room, department, level, phone, whatsapp, bio, image } = entry;
 
   return (
     <div
@@ -40,7 +38,7 @@ function Modal({ entry, onClose }) {
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white transition-all cursor-pointer"
@@ -58,26 +56,52 @@ function Modal({ entry, onClose }) {
           </svg>
         </button>
 
-        {/* Profile image */}
+        {/* Profile Image */}
         <div className="w-full h-64 bg-gray-100 overflow-hidden rounded-t-2xl flex items-center justify-center relative">
           {image ? (
             <img src={image} alt={name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-600 font-bold text-6xl select-none">
-              {name.charAt(0).toUpperCase()}
+              {name?.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
 
-        {/* Details */}
+        {/* Modal Content */}
         <div className="p-6 space-y-5">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{name}</h2>
-            <p className="text-sm font-medium text-blue-600 mt-1">
+            <p className="text-sm font-semibold text-blue-600 mt-1">
               {hostel} • Room {room}
             </p>
           </div>
 
+          {/* Department & Level Badges */}
+          {(department || level) && (
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {department && (
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <FaGraduationCap className="text-blue-600 shrink-0 text-base" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Department</p>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{department}</p>
+                  </div>
+                </div>
+              )}
+
+              {level && (
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <FaLayerGroup className="text-indigo-600 shrink-0 text-base" />
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Level</p>
+                    <p className="text-xs font-semibold text-slate-800">{level} Level</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bio / Note */}
           {bio && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
@@ -87,6 +111,7 @@ function Modal({ entry, onClose }) {
             </div>
           )}
 
+          {/* Contact Details */}
           <div className="flex flex-col gap-3 pt-3 border-t border-gray-100">
             {phone && (
               <a
@@ -138,13 +163,15 @@ export default function RoommateCard({
   name = "FullName",
   hostel = "Male Hostel 1",
   room = "A55",
+  department = "",
+  level = "",
   phone = "",
   whatsapp = "",
   bio = "",
   image = "",
 }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const entry = { name, hostel, room, phone, whatsapp, bio, image };
+  const entry = { name, hostel, room, department, level, phone, whatsapp, bio, image };
 
   return (
     <>
@@ -162,7 +189,7 @@ export default function RoommateCard({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-500 text-4xl font-bold">
-              {name.charAt(0).toUpperCase()}
+              {name?.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
