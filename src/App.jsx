@@ -27,7 +27,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path='/rooms' element={<Room />} />
             <Route path='/room/:hostel/:number' element={<RoomDetails />} />
-            <Route path='/roommate' element={<Roommate />} />
+            <Route path="/roommate" element={<Navigate to="/rooms" replace />} />
+            <Route path="/roommates" element={<Navigate to="/rooms" replace />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
