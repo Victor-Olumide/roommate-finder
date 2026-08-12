@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://abuadrooms.com.ng/sitemap.xml
