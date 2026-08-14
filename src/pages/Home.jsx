@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { HiDocumentArrowUp, HiCheckCircle, HiSparkles, HiMagnifyingGlass, HiUserGroup, HiShieldCheck, HiXMark, HiLockClosed, HiHome } from "react-icons/hi2";
+import { 
+    HiDocumentArrowUp, HiCheckCircle, HiSparkles, HiMagnifyingGlass, 
+    HiUserGroup, HiShieldCheck, HiXMark, HiLockClosed, HiHome, HiIdentification 
+} from "react-icons/hi2";
 import { FcGoogle } from "react-icons/fc";
 import {
     collection, addDoc, doc, getDoc,
@@ -30,8 +33,8 @@ function saveEntry(entry) {
 }
 
 const blankForm = {
-    hostel: "", room: "", wing: "", floor: "", name: "",
-    department: "", level: "", roomCapacity: 4, phone: "", whatsapp: "", bio: "",
+    hostel: "", room: "", roomSpace: "", matricNo: "", wing: "", floor: "", name: "",
+    department: "", level: "", gender: "", roomCapacity: 4, phone: "", whatsapp: "", bio: "",
 };
 
 export default function Home() {
@@ -71,35 +74,33 @@ export default function Home() {
     }, []);
 
     // Sync local state with Firestore truth on auth/mount
-useEffect(() => {
-    if (!currentUser) return;
+    useEffect(() => {
+        if (!currentUser) return;
 
-    const syncWithServer = async () => {
-        try {
-            const q = query(
-                collection(db, "entries"),
-                where("ownerUid", "==", currentUser.uid),
-                limit(1)
-            );
-            const snap = await getDocs(q);
+        const syncWithServer = async () => {
+            try {
+                const q = query(
+                    collection(db, "entries"),
+                    where("ownerUid", "==", currentUser.uid),
+                    limit(1)
+                );
+                const snap = await getDocs(q);
 
-            if (snap.empty) {
-                // Admin deleted entry on server -> wipe stale local storage
-                localStorage.removeItem(STORAGE_KEY);
-                setMyEntries([]);
-            } else {
-                // Entry exists on server -> update local storage to match server truth
-                const serverEntry = { id: snap.docs[0].id, ...snap.docs[0].data() };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify([serverEntry]));
-                setMyEntries([serverEntry]);
+                if (snap.empty) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    setMyEntries([]);
+                } else {
+                    const serverEntry = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify([serverEntry]));
+                    setMyEntries([serverEntry]);
+                }
+            } catch (err) {
+                console.error("Error syncing user entry from server:", err);
             }
-        } catch (err) {
-            console.error("Error syncing user entry from server:", err);
-        }
-    };
+        };
 
-    syncWithServer();
-}, [currentUser]);
+        syncWithServer();
+    }, [currentUser]);
 
     useEffect(() => { setMyEntries(getSavedEntries()); }, []);
 
@@ -137,64 +138,70 @@ useEffect(() => {
     };
 
     const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const isPdf = file.type === "application/pdf";
-    const isImage = file.type.startsWith("image/");
+        const isPdf = file.type === "application/pdf";
+        const isImage = file.type.startsWith("image/");
 
-    if (!isPdf && !isImage) {
-        setFormError("Please upload a valid ABUAD PDF slip or screenshot image (PNG, JPG).");
-        return;
-    }
-
-    setParsingPdf(true);
-    setFormError("");
-
-    try {
-        let parsed;
-        if (isPdf) {
-            parsed = await parseAllocationPdf(file);
-        } else {
-            parsed = await parseAllocationImage(file);
-        }
-
-        const isVerified = isPdf ? (parsed.hostel || parsed.name) : parsed.isVerified;
-
-        if (!isVerified) {
-            setFormError("Could not verify ABUAD allocation document. Please upload an official portal screenshot or PDF.");
-            setParsingPdf(false);
+        if (!isPdf && !isImage) {
+            setFormError("Please upload a valid ABUAD PDF slip or screenshot image (PNG, JPG).");
             return;
         }
 
-        // Fill extracted fields
-        setForm((f) => ({
-            ...f,
-            name: parsed.name || f.name,
-            department: parsed.department || f.department,
-            level: parsed.level || f.level,
-            hostel: parsed.hostel ? normalizeHostelName(parsed.hostel) : f.hostel,
-            room: parsed.room ? parsed.room.trim().toUpperCase() : f.room,
-        }));
+        setParsingPdf(true);
+        setFormError("");
 
-        setPdfSuccess(true);
-        setIsFieldsLocked(true); // Unlocks form fields for completion
+        try {
+            let parsed;
+            if (isPdf) {
+                parsed = await parseAllocationPdf(file);
+            } else {
+                parsed = await parseAllocationImage(file);
+            }
 
-        if (isPdf && parsed.hostel && parsed.room) {
-            showToast("success", "All details extracted from PDF slip!");
-        } else {
-            showToast("success", `Document verified for ${parsed.name || "Student"}! Select your Hostel & Room to complete.`);
+            const isVerified = isPdf ? (parsed.hostel || parsed.name) : parsed.isVerified;
+
+            if (!isVerified) {
+                setFormError("Could not verify ABUAD allocation document. Please upload an official portal slip or screenshot.");
+                setParsingPdf(false);
+                return;
+            }
+
+            // Populate all parsed details
+            setForm((f) => ({
+                ...f,
+                name: parsed.name || f.name,
+                matricNo: parsed.matricNo || f.matricNo,
+                department: parsed.department || f.department,
+                level: parsed.level || f.level,
+                gender: parsed.gender || f.gender,
+                hostel: parsed.hostel ? normalizeHostelName(parsed.hostel) : f.hostel,
+                room: parsed.room ? parsed.room.trim().toUpperCase() : f.room,
+                roomSpace: parsed.roomSpace ? parsed.roomSpace.trim().toUpperCase() : f.roomSpace,
+                wing: parsed.wing || f.wing,
+                floor: parsed.floor || f.floor,
+                roomCapacity: parsed.roomCapacity || f.roomCapacity || 4,
+            }));
+
+            setPdfSuccess(true);
+            setIsFieldsLocked(true);
+
+            if (isPdf && parsed.hostel && parsed.room) {
+                showToast("success", `Details extracted: ${parsed.name} (${parsed.room})`);
+            } else {
+                showToast("success", `Document verified for ${parsed.name || "Student"}!`);
+            }
+        } catch (err) {
+            console.error("Document parsing error:", err);
+            setFormError("Could not verify allocation document. Please try again.");
+        } finally {
+            setParsingPdf(false);
         }
-    } catch (err) {
-        console.error("Document parsing error:", err);
-        setFormError("Could not verify allocation document. Please try again.");
-    } finally {
-        setParsingPdf(false);
-    }
-};
+    };
 
     const handleResetScan = () => {
-        setForm((f) => ({ ...f, hostel: "", room: "" }));
+        setForm((f) => ({ ...f, hostel: "", room: "", roomSpace: "", matricNo: "" }));
         setIsFieldsLocked(false);
         setPdfSuccess(false);
     };
@@ -217,9 +224,10 @@ useEffect(() => {
     const startEdit = (entry) => {
         setEditingId(entry.id || entry._id);
         setForm({
-            hostel: entry.hostel || "", room: entry.room || "", wing: entry.wing || "",
-            floor: entry.floor || "", name: entry.name || "", department: entry.department || "",
-            level: entry.level || "", roomCapacity: entry.roomCapacity || 4,
+            hostel: entry.hostel || "", room: entry.room || "", roomSpace: entry.roomSpace || "",
+            matricNo: entry.matricNo || "", wing: entry.wing || "", floor: entry.floor || "",
+            name: entry.name || "", department: entry.department || "", level: entry.level || "",
+            gender: entry.gender || "", roomCapacity: entry.roomCapacity || 4,
             phone: entry.phone || "", whatsapp: entry.whatsapp || "", bio: entry.bio || "",
         });
         setImagePreview(entry.image || null);
@@ -235,94 +243,111 @@ useEffect(() => {
     };
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
+        e.preventDefault();
+        setFormError("");
 
-    if (!currentUser) { 
-        setFormError("Initializing connection. Please try again."); 
-        return; 
-    }
-
-    if (!editingId && !isFieldsLocked) {
-        setFormError("Please upload your official ABUAD Allocation PDF or Screenshot above to verify your room.");
-        return;
-    }
-
-    if (!form.hostel || !form.room || !form.name) { 
-        setFormError("Please fill in all required fields."); 
-        return; 
-    }
-
-    setSubmitting(true);
-    const cleanedHostel = normalizeHostelName(form.hostel);
-    const cleanedRoom = form.room.trim().toUpperCase();
-
-    try {
-        let imageUrl = imagePreview || "";
-        if (imageFile) {
-            imageUrl = await compressImage(imageFile);
+        if (!currentUser) { 
+            setFormError("Initializing connection. Please try again."); 
+            return; 
         }
 
-        if (editingId) {
-            const updatePayload = {
-                name: form.name.trim(), department: form.department.trim(),
-                level: form.level.trim(), wing: form.wing.trim(), floor: form.floor.trim(),
-                roomCapacity: Number(form.roomCapacity) || 4,
-                phone: form.phone.trim(), whatsapp: form.whatsapp.trim(), bio: form.bio.trim(),
-                image: imageUrl, nameLower: form.name.trim().toLowerCase(),
-                updatedAt: serverTimestamp(),
-            };
-            await updateDoc(doc(db, "entries", editingId), updatePayload);
-            saveEntry({ id: editingId, hostel: cleanedHostel, room: cleanedRoom, ...updatePayload });
-            setMyEntries(getSavedEntries());
-            cancelEdit();
-            navigate(`/room/${encodeURIComponent(cleanedHostel)}/${encodeURIComponent(cleanedRoom)}`);
-        } else {
-            // Live Server Check: Query Firestore to confirm if user actually owns an entry
-            const liveCheckSnap = await getDocs(query(
-                collection(db, "entries"),
-                where("ownerUid", "==", currentUser.uid),
-                limit(1)
-            ));
+        if (!editingId && !isFieldsLocked) {
+            setFormError("Please upload your official ABUAD Allocation PDF or Screenshot above to verify your room.");
+            return;
+        }
 
-            if (!liveCheckSnap.empty) {
-                // Sync local state if stale
-                const activeDoc = { id: liveCheckSnap.docs[0].id, ...liveCheckSnap.docs[0].data() };
-                saveEntry(activeDoc);
-                setMyEntries([activeDoc]);
+        if (!form.hostel || !form.room || !form.name) { 
+            setFormError("Please fill in all required fields."); 
+            return; 
+        }
 
-                setFormError("You already have an active room entry on the server. Use 'My Room' above to view or edit it.");
-                setSubmitting(false);
-                return;
+        setSubmitting(true);
+        const cleanedHostel = normalizeHostelName(form.hostel);
+        const cleanedRoom = form.room.trim().toUpperCase();
+        const cleanedBed = (form.roomSpace || "").trim().toUpperCase();
+
+        try {
+            let imageUrl = imagePreview || "";
+            if (imageFile) {
+                imageUrl = await compressImage(imageFile);
             }
 
-            // If Firestore confirms no entry exists, clear any stale local storage remnant
-            localStorage.removeItem(STORAGE_KEY);
+            if (editingId) {
+                const updatePayload = {
+                    name: form.name.trim(),
+                    department: form.department.trim(),
+                    level: form.level.trim(),
+                    roomSpace: cleanedBed,
+                    matricNo: (form.matricNo || "").trim(),
+                    wing: form.wing.trim(),
+                    floor: form.floor.trim(),
+                    gender: form.gender || "",
+                    roomCapacity: Number(form.roomCapacity) || 4,
+                    phone: form.phone.trim(),
+                    whatsapp: form.whatsapp.trim(),
+                    bio: form.bio.trim(),
+                    image: imageUrl,
+                    nameLower: form.name.trim().toLowerCase(),
+                    updatedAt: serverTimestamp(),
+                };
+                await updateDoc(doc(db, "entries", editingId), updatePayload);
+                saveEntry({ id: editingId, hostel: cleanedHostel, room: cleanedRoom, ...updatePayload });
+                setMyEntries(getSavedEntries());
+                cancelEdit();
+                navigate(`/room/${encodeURIComponent(cleanedHostel)}/${encodeURIComponent(cleanedRoom)}`);
+            } else {
+                const liveCheckSnap = await getDocs(query(
+                    collection(db, "entries"),
+                    where("ownerUid", "==", currentUser.uid),
+                    limit(1)
+                ));
 
-            const newDocPayload = {
-                hostel: cleanedHostel, room: cleanedRoom,
-                wing: form.wing.trim(), floor: form.floor.trim(),
-                name: form.name.trim(), department: form.department.trim(),
-                level: form.level.trim(), roomCapacity: Number(form.roomCapacity) || 4,
-                phone: form.phone.trim(), whatsapp: form.whatsapp.trim(), bio: form.bio.trim(),
-                image: imageUrl, ownerUid: currentUser.uid,
-                createdAt: serverTimestamp(),
-                hostelLower: cleanedHostel.toLowerCase(),
-                roomLower: cleanedRoom.toLowerCase(),
-                nameLower: form.name.trim().toLowerCase(),
-            };
-            const docRef = await addDoc(collection(db, "entries"), newDocPayload);
-            saveEntry({ id: docRef.id, ...newDocPayload });
-            setMyEntries(getSavedEntries());
-            navigate(`/room/${encodeURIComponent(cleanedHostel)}/${encodeURIComponent(cleanedRoom)}`);
+                if (!liveCheckSnap.empty) {
+                    const activeDoc = { id: liveCheckSnap.docs[0].id, ...liveCheckSnap.docs[0].data() };
+                    saveEntry(activeDoc);
+                    setMyEntries([activeDoc]);
+                    setFormError("You already have an active room entry on the server. Use 'My Room' above to view or edit it.");
+                    setSubmitting(false);
+                    return;
+                }
+
+                localStorage.removeItem(STORAGE_KEY);
+
+                const newDocPayload = {
+                    hostel: cleanedHostel,
+                    room: cleanedRoom,
+                    roomSpace: cleanedBed,
+                    matricNo: (form.matricNo || "").trim(),
+                    wing: form.wing.trim(),
+                    floor: form.floor.trim(),
+                    gender: form.gender || "",
+                    name: form.name.trim(),
+                    department: form.department.trim(),
+                    level: form.level.trim(),
+                    roomCapacity: Number(form.roomCapacity) || 4,
+                    phone: form.phone.trim(),
+                    whatsapp: form.whatsapp.trim(),
+                    bio: form.bio.trim(),
+                    image: imageUrl,
+                    ownerUid: currentUser.uid,
+                    createdAt: serverTimestamp(),
+                    hostelLower: cleanedHostel.toLowerCase(),
+                    roomLower: cleanedRoom.toLowerCase(),
+                    nameLower: form.name.trim().toLowerCase(),
+                };
+                const docRef = await addDoc(collection(db, "entries"), newDocPayload);
+                saveEntry({ id: docRef.id, ...newDocPayload });
+                setMyEntries(getSavedEntries());
+                navigate(`/room/${encodeURIComponent(cleanedHostel)}/${encodeURIComponent(cleanedRoom)}`);
+            }
+        } catch (err) {
+            console.error("Firestore submit error:", err);
+            setFormError("Database error. Please check your connection.");
+        } finally { 
+            setSubmitting(false); 
         }
-    } catch (err) {
-        console.error("Firestore submit error:", err);
-        setFormError("Database error. Please check your connection.");
-    } finally { 
-        setSubmitting(false); 
-    }
-};
+    };
+
     const latestEntry = myEntries[0];
 
     return (
@@ -364,7 +389,6 @@ useEffect(() => {
                             </div>
 
                             <div className="flex flex-wrap justify-center gap-3 pt-2 text-xs sm:text-sm">
-                                {/* MY ROOM BUTTON (Direct access to student's room) */}
                                 {latestEntry && (
                                     <Link
                                         to={`/room/${encodeURIComponent(normalizeHostelName(latestEntry.hostel))}/${encodeURIComponent((latestEntry.room || "").trim().toUpperCase())}`}
@@ -411,7 +435,7 @@ useEffect(() => {
                                 <input type="text" list="hostel-list" placeholder="Hostel (e.g. Jamaica, Wema, Male Hall 1)"
                                     value={searchHostel} onChange={(e) => setSearchHostel(e.target.value)}
                                     className="flex-1 p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
-                                <input type="text" placeholder="Room (e.g. D29)"
+                                <input type="text" placeholder="Room (e.g. D107)"
                                     value={searchRoom} onChange={(e) => setSearchRoom(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                                     className="sm:w-36 p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all uppercase" />
@@ -456,9 +480,14 @@ useEffect(() => {
                                                 Scanning Allocation Document / Screenshot...
                                             </div>
                                         ) : pdfSuccess ? (
-                                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
-                                                <HiCheckCircle className="text-xl" />
-                                                <span>Document Verified & Details Auto-Filled!</span>
+                                            <div className="flex flex-col items-center gap-1.5 text-center">
+                                                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
+                                                    <HiCheckCircle className="text-2xl" />
+                                                    <span>Slip Verified & Auto-Filled!</span>
+                                                </div>
+                                                <p className="text-xs text-slate-500">
+                                                    {form.name} • {form.hostel} ({form.room}{form.roomSpace ? ` - Bed ${form.roomSpace}` : ""})
+                                                </p>
                                             </div>
                                         ) : (
                                             <div className="text-center space-y-1">
@@ -466,10 +495,10 @@ useEffect(() => {
                                                     <HiDocumentArrowUp className="text-2xl" />
                                                 </div>
                                                 <p className="text-xs sm:text-sm font-bold text-slate-800">
-                                                    Upload ABUAD Allocation PDF or Screenshot
+                                                    Upload Room Allocation PDF or Screenshot
                                                 </p>
                                                 <p className="text-[11px] text-slate-400">
-                                                    Supports PDF slips, PNG, and JPG portal screenshots
+                                                    Supports official PDF allocation slips, PNG, and JPG screenshots
                                                 </p>
                                             </div>
                                         )}
@@ -492,7 +521,7 @@ useEffect(() => {
                                         </span>
                                         {!isFieldsLocked && !editingId && (
                                             <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                                                Upload Document Above
+                                                Upload Slip Above
                                             </span>
                                         )}
                                     </div>
@@ -520,7 +549,7 @@ useEffect(() => {
                                                 onClick={handleResetScan}
                                                 className="text-[10px] text-blue-600 hover:underline font-bold"
                                             >
-                                                Re-scan document
+                                                Re-scan slip
                                             </button>
                                         )}
                                     </div>
@@ -535,11 +564,50 @@ useEffect(() => {
                                     />
                                 </label>
 
+                                {/* Bed Space Selector */}
+                                <div className="sm:col-span-2 flex flex-col gap-1.5">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-slate-700">
+                                            Assigned Bed Space <span className="text-slate-400 font-normal">(e.g. Bed A, B, C, D)</span>
+                                        </span>
+                                        {form.roomSpace && (
+                                            <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                                                Bed {form.roomSpace} Selected
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {["A", "B", "C", "D"].map((bed) => (
+                                            <button
+                                                key={bed}
+                                                type="button"
+                                                onClick={() => setForm((f) => ({ ...f, roomSpace: bed }))}
+                                                className={`py-2.5 rounded-xl font-bold text-xs border transition-all ${
+                                                    form.roomSpace === bed
+                                                        ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20"
+                                                        : "bg-slate-50/80 text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-white"
+                                                }`}
+                                            >
+                                                Bed {bed}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Full Name */}
                                 <label className="flex flex-col gap-1.5 sm:col-span-2">
                                     <span className="text-xs font-semibold text-slate-700">Full Name <span className="text-rose-500">*</span></span>
                                     <input type="text" placeholder="Your full name"
                                         value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
+                                </label>
+
+                                {/* Matric No & Department */}
+                                <label className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-semibold text-slate-700">Matric No</span>
+                                    <input type="text" placeholder="e.g. 22/ENG02/036"
+                                        value={form.matricNo} onChange={(e) => setForm((f) => ({ ...f, matricNo: e.target.value }))}
+                                        className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all uppercase" />
                                 </label>
 
                                 <label className="flex flex-col gap-1.5">
@@ -549,11 +617,26 @@ useEffect(() => {
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
                                 </label>
 
+                                {/* Level & Capacity */}
                                 <label className="flex flex-col gap-1.5">
                                     <span className="text-xs font-semibold text-slate-700">Level</span>
-                                    <input type="text" placeholder="e.g. 300"
+                                    <input type="text" placeholder="e.g. 500"
                                         value={form.level} onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
+                                </label>
+
+                                <label className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-semibold text-slate-700">Room Capacity</span>
+                                    <select
+                                        value={form.roomCapacity}
+                                        onChange={(e) => setForm((f) => ({ ...f, roomCapacity: Number(e.target.value) }))}
+                                        className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                    >
+                                        <option value={1}>1-Person Room</option>
+                                        <option value={2}>2-Person Room</option>
+                                        <option value={3}>3-Person Room</option>
+                                        <option value={4}>4-Person Room</option>
+                                    </select>
                                 </label>
 
                                 {/* Profile Photo Uploader */}

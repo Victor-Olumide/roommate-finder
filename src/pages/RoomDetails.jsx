@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import RoommateCard from "../components/RoommateCard";
 import { GoArrowLeft } from "react-icons/go";
-import { HiShare, HiCheck, HiPencilSquare, HiTrash, HiUserGroup, HiPlus, HiLockClosed } from "react-icons/hi2";
+import { 
+  HiShare, HiCheck, HiPencilSquare, HiTrash, 
+  HiUserGroup, HiPlus, HiLockClosed, HiIdentification 
+} from "react-icons/hi2";
 import {
   collection, query, where,
   onSnapshot, doc, getDoc, deleteDoc,
@@ -55,7 +58,6 @@ export default function RoomDetails() {
     setLoading(true);
     setError(false);
 
-    // Query room entries matching hostel and room number
     const q = query(
       collection(db, "entries"),
       where("hostelLower", "==", canonicalHostel.toLowerCase()),
@@ -67,7 +69,6 @@ export default function RoomDetails() {
       (snap) => {
         const docsData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         
-        // Sort newest first client-side (prevents Firestore composite index errors)
         docsData.sort((a, b) => {
           const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
           const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
@@ -94,7 +95,6 @@ export default function RoomDetails() {
     const saved = getSavedEntries();
     const localIds = new Set(saved.map((e) => e.id || e._id));
 
-    // Check if user has an entry in this room via Auth UID OR LocalStorage
     const userIsMember = entries.some((entry) => {
       const isOwnerByUid = currentUser && entry.ownerUid === currentUser.uid;
       const isOwnerByLocal = localIds.has(entry.id || entry._id);
@@ -103,7 +103,6 @@ export default function RoomDetails() {
 
     setIsMemberOfRoom(userIsMember);
 
-    // Track owned entry IDs for rendering "Your Listing" badge / edit buttons
     const ownedIds = new Set(localIds);
     entries.forEach((e) => {
       if (currentUser && e.ownerUid === currentUser.uid) {
@@ -154,7 +153,7 @@ export default function RoomDetails() {
     }
   };
 
-  // 5. Share Page URL Handler
+  // 5. Share Handler
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -168,6 +167,23 @@ export default function RoomDetails() {
       setTimeout(() => setCopied(false), 2500);
     }
   };
+
+  // Determine dynamic capacity based on occupants or default 4
+  const roomCapacity = entries[0]?.roomCapacity || 4;
+  const standardBedLetters = ["A", "B", "C", "D"].slice(0, roomCapacity);
+
+  // Group entries by roomSpace ("A", "B", "C", "D")
+  const occupiedBeds = {};
+  const unassignedEntries = [];
+
+  entries.forEach((entry) => {
+    const space = (entry.roomSpace || "").toUpperCase();
+    if (standardBedLetters.includes(space) && !occupiedBeds[space]) {
+      occupiedBeds[space] = entry;
+    } else {
+      unassignedEntries.push(entry);
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50/60 via-slate-50 to-white text-slate-800 p-4 sm:p-6 md:p-10 font-sans">
@@ -185,9 +201,16 @@ export default function RoomDetails() {
               <GoArrowLeft className="text-sm" />
               <span>All rooms</span>
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              {canonicalHostel} <span className="text-slate-300 font-normal">/</span> Room {decodedNumber}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                {canonicalHostel} <span className="text-slate-300 font-normal">/</span> Room {decodedNumber}
+              </h1>
+              {entries.length > 0 && isMemberOfRoom && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                  {entries.length} / {roomCapacity} Occupants Claimed
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -233,7 +256,7 @@ export default function RoomDetails() {
           </div>
         )}
 
-        {/* Empty Room State (When zero entries exist in this room) */}
+        {/* Empty Room State */}
         {!loading && !error && entries.length === 0 && (
           <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/80 p-8 shadow-xs max-w-xl mx-auto my-4">
             <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-3">
@@ -252,7 +275,7 @@ export default function RoomDetails() {
           </div>
         )}
 
-        {/* PRIVACY LOCK: Room has occupants, but visiting user is NOT registered in this room */}
+        {/* PRIVACY LOCK */}
         {!loading && !error && entries.length > 0 && !isMemberOfRoom && (
           <div className="text-center py-16 bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-8 shadow-sm max-w-xl mx-auto my-4 space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-amber-100/80 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-xs">
@@ -261,7 +284,7 @@ export default function RoomDetails() {
             <div>
               <h3 className="text-lg font-extrabold text-slate-900">Room Details Are Locked</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
-                To protect student privacy, roommate details for <strong className="text-slate-800">{canonicalHostel}, Room {decodedNumber}</strong> are only visible to students assigned to this room.
+                To protect student privacy, roommate details for <strong className="text-slate-800">{canonicalHostel}, Room {decodedNumber}</strong> are only visible to verified co-occupants.
               </p>
             </div>
             <div className="pt-2">
@@ -275,67 +298,150 @@ export default function RoomDetails() {
           </div>
         )}
 
-        {/* UNLOCKED: Display Roommates Grid */}
+        {/* UNLOCKED: Display Bed Grid */}
         {!loading && !error && entries.length > 0 && isMemberOfRoom && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start pt-2">
-            {entries.map((entry) => {
-              const entryId = entry.id || entry._id;
-              const isOwner = myEntryIds.has(entryId);
-              return (
-                <div key={entryId} className="flex flex-col gap-2">
-                  <RoommateCard
-                    name={entry.name}
-                    hostel={entry.hostel}
-                    room={entry.room}
-                    department={entry.department}
-                    level={entry.level}
-                    phone={entry.phone}
-                    whatsapp={entry.whatsapp}
-                    bio={entry.bio}
-                    image={entry.image}
-                  />
-                  {isOwner && (
-                    <div className="flex items-center justify-between px-4 py-2 bg-blue-50/80 rounded-2xl border border-blue-200/80 shadow-xs">
-                      <span className="text-[11px] font-bold text-blue-700 px-2.5 py-0.5 rounded-full bg-blue-100">
-                        Your Listing
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => navigate(`/?edit=${entryId}`)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-xl hover:bg-blue-50 transition-all shadow-xs cursor-pointer"
-                        >
-                          <HiPencilSquare className="text-sm" /><span>Edit</span>
-                        </button>
-                        {confirmDeleteId === entryId ? (
-                          <div className="flex gap-1.5">
-                            <button 
-                              onClick={() => handleDelete(entryId)} 
-                              disabled={deletingId === entryId}
-                              className="px-3 py-1.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
-                            >
-                              {deletingId === entryId ? "Deleting…" : "Confirm"}
-                            </button>
-                            <button 
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="px-3 py-1.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => setConfirmDeleteId(entryId)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-600 bg-white border border-rose-200 rounded-xl hover:bg-rose-50 transition-all shadow-xs cursor-pointer"
-                          >
-                            <HiTrash className="text-sm" /><span>Delete</span>
-                          </button>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch pt-2">
+              {standardBedLetters.map((bedLetter) => {
+                const entry = occupiedBeds[bedLetter];
+
+                if (entry) {
+                  const entryId = entry.id || entry._id;
+                  const isOwner = myEntryIds.has(entryId);
+
+                  return (
+                    <div key={entryId} className="flex flex-col gap-2 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+                      {/* Bed Badge & Matric Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-extrabold text-xs rounded-xl border border-indigo-200">
+                          Bed {bedLetter}
+                        </span>
+                        {entry.matricNo && (
+                          <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
+                            <HiIdentification className="text-sm text-slate-400" />
+                            {entry.matricNo}
+                          </span>
                         )}
                       </div>
+
+                      <RoommateCard
+                        name={entry.name}
+                        hostel={entry.hostel}
+                        room={entry.room}
+                        department={entry.department}
+                        level={entry.level}
+                        phone={entry.phone}
+                        whatsapp={entry.whatsapp}
+                        bio={entry.bio}
+                        image={entry.image}
+                      />
+
+                      {isOwner && (
+                        <div className="flex items-center justify-between px-4 py-2 mt-auto bg-blue-50/80 rounded-2xl border border-blue-200/80 shadow-xs">
+                          <span className="text-[11px] font-bold text-blue-700 px-2.5 py-0.5 rounded-full bg-blue-100">
+                            Your Listing
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => navigate(`/?edit=${entryId}`)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-xl hover:bg-blue-50 transition-all shadow-xs cursor-pointer"
+                            >
+                              <HiPencilSquare className="text-sm" /><span>Edit</span>
+                            </button>
+                            {confirmDeleteId === entryId ? (
+                              <div className="flex gap-1.5">
+                                <button 
+                                  onClick={() => handleDelete(entryId)} 
+                                  disabled={deletingId === entryId}
+                                  className="px-3 py-1.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
+                                >
+                                  {deletingId === entryId ? "Deleting…" : "Confirm"}
+                                </button>
+                                <button 
+                                  onClick={() => setConfirmDeleteId(null)}
+                                  className="px-3 py-1.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => setConfirmDeleteId(entryId)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-600 bg-white border border-rose-200 rounded-xl hover:bg-rose-50 transition-all shadow-xs cursor-pointer"
+                              >
+                                <HiTrash className="text-sm" /><span>Delete</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  );
+                }
+
+                {/* Empty Bed Placeholder Card */}
+                return (
+                  <div 
+                    key={bedLetter} 
+                    className="flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 text-center space-y-3 min-h-[260px]"
+                  >
+                    <span className="px-3 py-1 bg-slate-200/80 text-slate-600 font-bold text-xs rounded-xl">
+                      Bed {bedLetter}
+                    </span>
+                    <p className="text-xs font-semibold text-slate-400">This bed space is unclaimed</p>
+                    <Link
+                      to={`/?hostel=${encodeURIComponent(canonicalHostel)}&room=${encodeURIComponent(decodedNumber)}`}
+                      className="inline-flex items-center gap-1 px-4 py-2 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-blue-600 font-bold text-xs rounded-xl shadow-xs transition-all"
+                    >
+                      <HiPlus className="text-sm" /> Claim Bed {bedLetter}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Display Unassigned Legacy Entries (if any exist) */}
+            {unassignedEntries.length > 0 && (
+              <div className="pt-6 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Additional Co-Occupants
+                </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {unassignedEntries.map((entry) => {
+                    const entryId = entry.id || entry._id;
+                    const isOwner = myEntryIds.has(entryId);
+                    return (
+                      <div key={entryId} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
+                        <RoommateCard
+                          name={entry.name}
+                          hostel={entry.hostel}
+                          room={entry.room}
+                          department={entry.department}
+                          level={entry.level}
+                          phone={entry.phone}
+                          whatsapp={entry.whatsapp}
+                          bio={entry.bio}
+                          image={entry.image}
+                        />
+                        {isOwner && (
+                          <div className="flex items-center justify-between px-4 py-2 mt-auto bg-blue-50/80 rounded-2xl border border-blue-200/80 shadow-xs">
+                            <span className="text-[11px] font-bold text-blue-700 px-2.5 py-0.5 rounded-full bg-blue-100">
+                              Your Listing
+                            </span>
+                            <button 
+                              onClick={() => navigate(`/?edit=${entryId}`)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 rounded-xl hover:bg-blue-50 transition-all shadow-xs cursor-pointer"
+                            >
+                              <HiPencilSquare className="text-sm" /><span>Edit</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
         )}
       </div>
