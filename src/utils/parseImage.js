@@ -20,8 +20,8 @@ export async function parseAllocationImage(file) {
         await worker.terminate();
       } catch (_) {}
     }
-    // Fail-safe: Allow the user into the form rather than blocking them
-    return { isVerified: true, name: "" };
+    // Fail-safe: If OCR processing completely crashes, treat as unverified
+    return { isVerified: false, name: "" };
   }
 }
 
@@ -41,32 +41,36 @@ function parseTextData(text) {
     roomCapacity: 4,
   };
 
-  if (!text || text.trim().length === 0) {
-    // If text was completely empty, return verified so the student can enter manually
-    result.isVerified = true;
-    return result;
+  if (!text || text.trim().length < 15) {
+    return result; // Not enough text to be a valid slip
   }
 
   const cleanText = text.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
   const upperText = cleanText.toUpperCase();
 
-  // 1. Resilient Verification Check
-  const markers = [
-    "AFE", "BABALOLA", "ABUAD", "ALLOCAT", "HOSTEL", 
-    "ROOM", "MATRIC", "HALL", "PROGRAMME", "COLLEGE", "FEMALE", "MALE"
-  ];
-  const hasMarker = markers.some((m) => upperText.includes(m));
-  if (hasMarker) {
-    result.isVerified = true;
+  // ── STRICT VALIDATION GATE ────────────────────────────────────────────
+  // An official allocation slip MUST contain a valid Matric pattern OR 
+  // mandatory ABUAD slip title markers together.
+  const hasValidMatric = /(\d{2}\/[A-Z0-9]{2,8}\/\d{2,5})/i.test(cleanText);
+  const hasAllocationHeader = upperText.includes("ALLOCATION") && (upperText.includes("ABUAD") || upperText.includes("BABALOLA"));
+  
+  if (!hasValidMatric && !hasAllocationHeader) {
+    console.warn("Uploaded image failed ABUAD slip validation check.");
+    return result; // isVerified remains false, preventing bypass!
   }
 
-  // 2. Multi-tier Name Extraction
-  // Pattern A: Standard "ALLOCATION FOR [Name]" (Now supports hyphens and "Room Allocated on")
+  // Extract Matric Number if present
+  const matricMatch = cleanText.match(/(\d{2}\/[A-Z0-9]{2,8}\/\d{2,5})/i);
+  if (matricMatch) {
+    result.matricNo = matricMatch[1].trim().toUpperCase();
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
+  // Multi-tier Name Extraction
   const nameMatchA = cleanText.match(
     /(?:ROOM\s+)?ALLOCATION\s+FOR\s+([A-Za-z\s\-]+?)(?=\s+(?:Room\s+Allocated|PERSONAL|HOSTEL|DETAILS|Matric|Level|Gender|Sex|Session|College|Programme|soa|Seal|\d|$))/i
   );
 
-  // Pattern B: Fallback "FOR [Name]"
   const nameMatchB = cleanText.match(
     /\bFOR\s+([A-Za-z\s\-]{4,45}?)(?=\s+(?:Room\s+Allocated|PERSONAL|HOSTEL|DETAILS|Matric|Level|Gender|Sex|Session|College|Programme|\d|$))/i
   );
@@ -79,10 +83,9 @@ function parseTextData(text) {
   }
 
   if (rawName) {
-    // Strip noise but preserve letters, spaces, and hyphens
     rawName = rawName
       .replace(/\b(Personal|Details|Hostel|Information|Matric|soa|Sallinty|Security|Official|Stamp|Portal|University|Afe|Babalola|Room|Allocated|on)\b/gi, "")
-      .replace(/[^A-Za-z\s\-]/g, "") // Now explicitly allows hyphens
+      .replace(/[^A-Za-z\s\-]/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
@@ -91,16 +94,12 @@ function parseTextData(text) {
       if (words[0].toLowerCase() === "kueze") {
         words[0] = "Ikueze";
       }
-      // Take up to 4 words to ensure hyphenated names are fully captured
       result.name = words.slice(0, 4).join(" ");
-      result.isVerified = true;
     }
   }
 
-  // 3. Guarantee Verification for any detected portal structure
-  if (!result.name && (hasMarker || cleanText.length > 20)) {
-    result.isVerified = true;
-  }
+  // Mark as verified only if we successfully passed the strict gate
+  result.isVerified = true;
 
   return result;
 }

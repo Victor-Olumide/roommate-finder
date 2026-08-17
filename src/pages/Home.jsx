@@ -161,16 +161,14 @@ export default function Home() {
                 parsed = await parseAllocationImage(file);
             }
 
-            // 2. Trust the parsers' built-in strict verification logic
+            // 2. Strict Verification Gate: STOP execution here if not verified!
             if (!parsed || !parsed.isVerified) {
                 setFormError("Could not verify ABUAD allocation document. Please upload an official portal slip or screenshot.");
                 setParsingPdf(false);
-                return;
+                return; // <-- THIS RETURN IS CRITICAL. It stops fake files from unlocking the form.
             }
 
-            // 3. Populate details. 
-            // We use parsed values if they exist, otherwise we strictly fall back to empty strings "" 
-            // so that if a student re-uploads a screenshot, it clears out old manual data.
+            // 3. Populate details safely
             setForm((f) => ({
                 ...f,
                 name: parsed.name || "",
@@ -187,7 +185,7 @@ export default function Home() {
             }));
 
             setPdfSuccess(true);
-            setIsDocumentVerified(true); // This unlocks your inputs for manual typing!
+            setIsDocumentVerified(true); // Now this only triggers if the strict gate passes!
 
             if (parsed.hostel && parsed.room) {
                 showToast("success", `Details extracted: ${parsed.name} (${parsed.room})`);
@@ -265,17 +263,14 @@ export default function Home() {
 
         setSubmitting(true);
         
-        // Normalize the typed hostel
         const cleanedHostel = normalizeHostelName(form.hostel);
 
-        // 1. STRICT DATALIST VALIDATION: Block typos and fake hostels
         if (!ABUAD_HOSTELS.includes(cleanedHostel)) {
             setFormError("Please select a valid ABUAD hostel from the dropdown list.");
             setSubmitting(false);
             return;
         }
 
-        // 2. AUTO-EXTRACT GENDER: Derived directly from the canonical hostel name
         const derivedGender = cleanedHostel.includes("Female") ? "Female" : 
                               cleanedHostel.includes("Male") ? "Male" : "";
 
@@ -297,7 +292,7 @@ export default function Home() {
                     matricNo: (form.matricNo || "").trim(),
                     wing: form.wing.trim(),
                     floor: form.floor.trim(),
-                    gender: derivedGender, // <-- Uses the auto-extracted gender
+                    gender: derivedGender,
                     roomCapacity: Number(form.roomCapacity) || 4,
                     phone: form.phone.trim(),
                     whatsapp: form.whatsapp.trim(),
@@ -336,7 +331,7 @@ export default function Home() {
                     matricNo: (form.matricNo || "").trim(),
                     wing: form.wing.trim(),
                     floor: form.floor.trim(),
-                    gender: derivedGender, // <-- Uses the auto-extracted gender
+                    gender: derivedGender,
                     name: form.name.trim(),
                     department: form.department.trim(),
                     level: form.level.trim(),

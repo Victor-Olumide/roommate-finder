@@ -11,7 +11,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
  * Renders the first page of an image-based PDF to a high-res image Blob.
  */
 async function renderPageToBlob(page) {
-  // Scale 2.5 ensures crisp OCR text recognition
   const viewport = page.getViewport({ scale: 2.5 });
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d", { willReadFrequently: true });
@@ -19,7 +18,6 @@ async function renderPageToBlob(page) {
   canvas.height = Math.floor(viewport.height);
   canvas.width = Math.floor(viewport.width);
 
-  // Fill white background to avoid transparent canvas OCR issues
   context.fillStyle = "#FFFFFF";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -65,6 +63,20 @@ export async function parseAllocationPdf(file) {
     if (cleanText.length < 35) {
       return await runOcrFallback();
     }
+
+    // ── STRICT VALIDATION GATE ────────────────────────────────────────────
+    // An official ABUAD allocation slip MUST contain a valid Matric Number pattern 
+    // AND reference room/hostel/allocation context. If not, reject it immediately!
+    const hasValidMatric = /(\d{2}\/[A-Z0-9]{2,8}\/\d{2,5})/i.test(cleanText);
+    const hasSlipKeywords = 
+      /allocation/i.test(cleanText) || 
+      (/hostel/i.test(cleanText) && /room/i.test(cleanText));
+
+    if (!hasValidMatric && !hasSlipKeywords) {
+      console.warn("Uploaded document failed ABUAD slip validation check.");
+      return { isVerified: false, name: "" };
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     // ── DIGITAL TEXT EXTRACTION ───────────────────────────────────────────
     let extractedName = "";
