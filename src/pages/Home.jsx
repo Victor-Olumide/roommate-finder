@@ -55,7 +55,7 @@ export default function Home() {
     const [submitting, setSubmitting] = useState(false);
     const [parsingPdf, setParsingPdf] = useState(false);
     const [pdfSuccess, setPdfSuccess] = useState(false);
-    const [isFieldsLocked, setIsFieldsLocked] = useState(false);
+    const [isDocumentVerified, setIsDocumentVerified] = useState(false);
     const [formError, setFormError] = useState("");
 
     const [myEntries, setMyEntries] = useState([]);
@@ -154,43 +154,45 @@ export default function Home() {
 
         try {
             let parsed;
+            // 1. Route strictly based on file type
             if (isPdf) {
                 parsed = await parseAllocationPdf(file);
             } else {
                 parsed = await parseAllocationImage(file);
             }
 
-            const isVerified = isPdf ? (parsed.hostel || parsed.name) : parsed.isVerified;
-
-            if (!isVerified) {
+            // 2. Trust the parsers' built-in strict verification logic
+            if (!parsed || !parsed.isVerified) {
                 setFormError("Could not verify ABUAD allocation document. Please upload an official portal slip or screenshot.");
                 setParsingPdf(false);
                 return;
             }
 
-            // Populate all parsed details
+            // 3. Populate details. 
+            // We use parsed values if they exist, otherwise we strictly fall back to empty strings "" 
+            // so that if a student re-uploads a screenshot, it clears out old manual data.
             setForm((f) => ({
                 ...f,
-                name: parsed.name || f.name,
-                matricNo: parsed.matricNo || f.matricNo,
-                department: parsed.department || f.department,
-                level: parsed.level || f.level,
-                gender: parsed.gender || f.gender,
-                hostel: parsed.hostel ? normalizeHostelName(parsed.hostel) : f.hostel,
-                room: parsed.room ? parsed.room.trim().toUpperCase() : f.room,
-                roomSpace: parsed.roomSpace ? parsed.roomSpace.trim().toUpperCase() : f.roomSpace,
-                wing: parsed.wing || f.wing,
-                floor: parsed.floor || f.floor,
-                roomCapacity: parsed.roomCapacity || f.roomCapacity || 4,
+                name: parsed.name || "",
+                matricNo: parsed.matricNo || "",
+                department: parsed.department || "",
+                level: parsed.level || "",
+                gender: parsed.gender || "",
+                hostel: parsed.hostel ? normalizeHostelName(parsed.hostel) : "",
+                room: parsed.room ? parsed.room.trim().toUpperCase() : "",
+                roomSpace: parsed.roomSpace ? parsed.roomSpace.trim().toUpperCase() : "",
+                wing: parsed.wing || "",
+                floor: parsed.floor || "",
+                roomCapacity: parsed.roomCapacity || 4,
             }));
 
             setPdfSuccess(true);
-            setIsFieldsLocked(true);
+            setIsDocumentVerified(true); // This unlocks your inputs for manual typing!
 
-            if (isPdf && parsed.hostel && parsed.room) {
+            if (parsed.hostel && parsed.room) {
                 showToast("success", `Details extracted: ${parsed.name} (${parsed.room})`);
             } else {
-                showToast("success", `Document verified for ${parsed.name || "Student"}!`);
+                showToast("success", `Document verified for ${parsed.name || "Student"}! Please fill in your room details.`);
             }
         } catch (err) {
             console.error("Document parsing error:", err);
@@ -202,7 +204,7 @@ export default function Home() {
 
     const handleResetScan = () => {
         setForm((f) => ({ ...f, hostel: "", room: "", roomSpace: "", matricNo: "" }));
-        setIsFieldsLocked(false);
+        setIsDocumentVerified(false);
         setPdfSuccess(false);
     };
 
@@ -232,14 +234,14 @@ export default function Home() {
         });
         setImagePreview(entry.image || null);
         setImageFile(null);
-        setFormError(""); setPdfSuccess(false); setIsFieldsLocked(true);
+        setFormError(""); setPdfSuccess(false); setIsDocumentVerified(true);
         setTimeout(() => document.getElementById("entry-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     };
 
     const cancelEdit = () => {
         setEditingId(null); setForm(blankForm);
         setImageFile(null); setImagePreview(null);
-        setFormError(""); setPdfSuccess(false); setIsFieldsLocked(false);
+        setFormError(""); setPdfSuccess(false); setIsDocumentVerified(false);
     };
 
     const handleSubmit = async (e) => {
@@ -251,7 +253,7 @@ export default function Home() {
             return; 
         }
 
-        if (!editingId && !isFieldsLocked) {
+        if (!editingId && !isDocumentVerified) {
             setFormError("Please upload your official ABUAD Allocation PDF or Screenshot above to verify your room.");
             return;
         }
@@ -262,7 +264,21 @@ export default function Home() {
         }
 
         setSubmitting(true);
+        
+        // Normalize the typed hostel
         const cleanedHostel = normalizeHostelName(form.hostel);
+
+        // 1. STRICT DATALIST VALIDATION: Block typos and fake hostels
+        if (!ABUAD_HOSTELS.includes(cleanedHostel)) {
+            setFormError("Please select a valid ABUAD hostel from the dropdown list.");
+            setSubmitting(false);
+            return;
+        }
+
+        // 2. AUTO-EXTRACT GENDER: Derived directly from the canonical hostel name
+        const derivedGender = cleanedHostel.includes("Female") ? "Female" : 
+                              cleanedHostel.includes("Male") ? "Male" : "";
+
         const cleanedRoom = form.room.trim().toUpperCase();
         const cleanedBed = (form.roomSpace || "").trim().toUpperCase();
 
@@ -281,7 +297,7 @@ export default function Home() {
                     matricNo: (form.matricNo || "").trim(),
                     wing: form.wing.trim(),
                     floor: form.floor.trim(),
-                    gender: form.gender || "",
+                    gender: derivedGender, // <-- Uses the auto-extracted gender
                     roomCapacity: Number(form.roomCapacity) || 4,
                     phone: form.phone.trim(),
                     whatsapp: form.whatsapp.trim(),
@@ -320,7 +336,7 @@ export default function Home() {
                     matricNo: (form.matricNo || "").trim(),
                     wing: form.wing.trim(),
                     floor: form.floor.trim(),
-                    gender: form.gender || "",
+                    gender: derivedGender, // <-- Uses the auto-extracted gender
                     name: form.name.trim(),
                     department: form.department.trim(),
                     level: form.level.trim(),
@@ -519,7 +535,7 @@ export default function Home() {
                                         <span className="text-xs font-semibold text-slate-700">
                                             Hostel Name <span className="text-rose-500">*</span>
                                         </span>
-                                        {!isFieldsLocked && !editingId && (
+                                        {!isDocumentVerified && !editingId && (
                                             <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                                                 Upload Slip Above
                                             </span>
@@ -528,10 +544,10 @@ export default function Home() {
                                     <input
                                         type="text"
                                         list="hostel-list"
-                                        placeholder={isFieldsLocked ? "" : "Upload allocation document above"}
+                                        placeholder={isDocumentVerified ? "" : "Upload allocation document above"}
                                         value={form.hostel}
                                         onChange={(e) => setForm((f) => ({ ...f, hostel: e.target.value }))}
-                                        disabled={!isFieldsLocked && !editingId}
+                                        disabled={!isDocumentVerified && !editingId}
                                         required
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                                     />
@@ -543,7 +559,7 @@ export default function Home() {
                                         <span className="text-xs font-semibold text-slate-700">
                                             Room Number <span className="text-rose-500">*</span>
                                         </span>
-                                        {isFieldsLocked && !editingId && (
+                                        {isDocumentVerified && !editingId && (
                                             <button
                                                 type="button"
                                                 onClick={handleResetScan}
@@ -555,10 +571,10 @@ export default function Home() {
                                     </div>
                                     <input
                                         type="text"
-                                        placeholder={isFieldsLocked ? "" : "Upload allocation document above"}
+                                        placeholder={isDocumentVerified ? "" : "Upload allocation document above"}
                                         value={form.room}
                                         onChange={(e) => setForm((f) => ({ ...f, room: e.target.value }))}
-                                        disabled={!isFieldsLocked && !editingId}
+                                        disabled={!isDocumentVerified && !editingId}
                                         required
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all uppercase disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                                     />

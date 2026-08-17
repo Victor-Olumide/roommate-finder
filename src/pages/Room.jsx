@@ -1,21 +1,37 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { collection, query, onSnapshot } from "firebase/firestore";
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { 
   HiMagnifyingGlass, HiXMark, HiHomeModern, 
   HiArrowRight, HiUserGroup, HiSparkles 
 } from "react-icons/hi2";
-import { db } from "../firebase";
-import { normalizeHostelName, HOSTEL_MAPPINGS } from "../utils/hostelData";
+import { db, auth } from "../firebase";
+import { normalizeHostelName } from "../utils/hostelData";
 
 export default function Rooms() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // "all" | "female" | "male"
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  // Subscribe to Firestore entries in real-time
+  // 1. Ensure the user is authenticated (Anonymous or Google) before querying
   useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        signInAnonymously(auth).catch((err) => console.error("Auth error:", err));
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // 2. Subscribe to Firestore ONLY after auth is confirmed
+  useEffect(() => {
+    if (!user) return; // Don't query until Firebase gives us a secure token
+
     setLoading(true);
     const q = query(collection(db, "entries"));
     const unsubscribe = onSnapshot(
@@ -37,7 +53,7 @@ export default function Rooms() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [user]); // Re-run when the user object is ready
 
   // Aggregate room map (Hostel + Room unique grouping with normalization)
   const allRooms = useMemo(() => {
@@ -165,7 +181,7 @@ export default function Rooms() {
               onClick={() => setActiveFilter("all")}
               className={`px-4 py-2 rounded-xl transition-all ${
                 activeFilter === "all"
-                  ? "bg-white text-blue-600 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -175,7 +191,7 @@ export default function Rooms() {
               onClick={() => setActiveFilter("female")}
               className={`px-4 py-2 rounded-xl transition-all ${
                 activeFilter === "female"
-                  ? "bg-white text-blue-600 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -185,7 +201,7 @@ export default function Rooms() {
               onClick={() => setActiveFilter("male")}
               className={`px-4 py-2 rounded-xl transition-all ${
                 activeFilter === "male"
-                  ? "bg-white text-blue-600 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
