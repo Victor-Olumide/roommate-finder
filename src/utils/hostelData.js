@@ -4,25 +4,26 @@
 export const HOSTEL_MAPPINGS = [
   // ==================== FEMALE HOSTELS ====================
   {
-    canonical: "Abuad Female Hostel 1",
+    canonical: "Female Hall 1",
     aliases: [
       "Female Hall 1 (ABUAD Female Hostel)",
       "Female Hall 1 (ABUAD Female)",
       "Female Hall 1",
+      "Female Hostel 1",
       "ABUAD Female Hostel 1",
       "ABUAD Female Hostel",
-      "ABUAD Hostel (Female)",
+      "ABUAD Hostel Female",
       "FH 1",
       "FH1",
-      "Hall 1 (Female)",
     ],
   },
   {
-    canonical: "Abuad Female Hostel 2",
+    canonical: "Female Hall 2",
     aliases: [
       "Female Hall 2 (Wema Hostel)",
       "Female Hall 2 (Wema)",
       "Female Hall 2",
+      "Female Hostel 2",
       "Wema Hostel",
       "Wema",
       "Abuad Female Hostel 2",
@@ -31,12 +32,12 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Female Hostel 3",
+    canonical: "Female Hall 3",
     aliases: [
       "Female Hall 3 (NFH 1)",
       "Female Hall 3 (New Female Hostel 1)",
-      "Female Hall 3(New Female Hostel 1)",
       "Female Hall 3",
+      "Female Hostel 3",
       "New Female Hostel 1",
       "NFH 1",
       "NFH1",
@@ -46,11 +47,12 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Female Hostel 4",
+    canonical: "Female Hall 4",
     aliases: [
       "Female Hall 4 (New Female Hostel 2)",
       "Female Hall 4 (NFH 2)",
       "Female Hall 4",
+      "Female Hostel 4",
       "New Female Hostel 2",
       "NFH 2",
       "NFH2",
@@ -63,48 +65,48 @@ export const HOSTEL_MAPPINGS = [
     canonical: "Female Hall 5 (A)",
     aliases: [
       "Female Hall 5 Block A",
+      "Female Hall 5 (Block A)",
       "Female Hall 5A",
+      "Female Hall 5 A",
       "Hall 5A",
       "FH 5A",
       "FH5A",
-      "Female Hall 5 (A)",
-      "Hall 5 (A)",
     ],
   },
   {
     canonical: "Female Hall 5 (B)",
     aliases: [
       "Female Hall 5 Block B",
+      "Female Hall 5 (Block B)",
       "Female Hall 5B",
+      "Female Hall 5 B",
       "Hall 5B",
       "FH 5B",
       "FH5B",
-      "Female Hall 5 (B)",
-      "Hall 5 (B)",
     ],
   },
   {
     canonical: "Female Hall 5 (C)",
     aliases: [
       "Female Hall 5 Block C",
+      "Female Hall 5 (Block C)",
       "Female Hall 5C",
+      "Female Hall 5 C",
       "Hall 5C",
       "FH 5C",
       "FH5C",
-      "Female Hall 5 (C)",
-      "Hall 5 (C)",
     ],
   },
   {
     canonical: "Female Hall 5 (D)",
     aliases: [
       "Female Hall 5 Block D",
+      "Female Hall 5 (Block D)",
       "Female Hall 5D",
+      "Female Hall 5 D",
       "Hall 5D",
       "FH 5D",
       "FH5D",
-      "Female Hall 5 (D)",
-      "Hall 5 (D)",
     ],
   },
   {
@@ -131,6 +133,7 @@ export const HOSTEL_MAPPINGS = [
     canonical: "Female Medical Hall 3",
     aliases: [
       "Female Medical Hall 3",
+      "Female Medical Hostel 3",
       "FMH 3",
       "FMH3",
       "Medical Female Hostel 3",
@@ -141,6 +144,7 @@ export const HOSTEL_MAPPINGS = [
     canonical: "Female Medical Hall 4",
     aliases: [
       "Female Medical Hall 4",
+      "Female Medical Hostel 4",
       "FMH 4",
       "FMH4",
       "Medical Female Hostel 4",
@@ -150,11 +154,12 @@ export const HOSTEL_MAPPINGS = [
 
   // ==================== MALE HOSTELS ====================
   {
-    canonical: "Abuad Male Hostel 1",
+    canonical: "Male Hall 1",
     aliases: [
       "Male Hall 1 (Jamaica)",
       "Male Hall 1 (ABUAD Male Hostel)",
       "Male Hall 1",
+      "Male Hostel 1",
       "Jamaica Hostel",
       "Jamaica",
       "Abuad Male Hostel 1",
@@ -163,11 +168,12 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Male Hostel 2",
+    canonical: "Male Hall 2",
     aliases: [
       "Male Hall 2 (Kuvuki)",
       "Male Hall 2 (ABUAD Male Hostel 2)",
       "Male Hall 2",
+      "Male Hostel 2",
       "Kuvuki Hostel",
       "Kuvuki",
       "Abuad Male Hostel 2",
@@ -176,11 +182,12 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Male Hostel 3",
+    canonical: "Male Hall 3",
     aliases: [
       "Male Hall 3 (Freshers Hostel)",
       "Male Hall 3 (Freshers Male Hostel)",
       "Male Hall 3",
+      "Male Hostel 3",
       "Freshers Male Hostel",
       "Freshers Hostel",
       "Freshers",
@@ -190,10 +197,10 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Male Hostel 4",
+    canonical: "Male Hall 4",
     aliases: [
-      "Male Hall 4 ",
       "Male Hall 4",
+      "Male Hostel 4",
       "Abuad Male Hostel 4",
       "MH 4",
       "MH4",
@@ -202,9 +209,10 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Male Hostel 5",
+    canonical: "Male Hall 5",
     aliases: [
       "Male Hall 5",
+      "Male Hostel 5",
       "Abuad Male Hostel 5",
       "MH 5",
       "MH5",
@@ -213,13 +221,14 @@ export const HOSTEL_MAPPINGS = [
     ],
   },
   {
-    canonical: "Abuad Male Hostel 6",
+    canonical: "Male Hall 6",
     aliases: [
       "Male Hall 6 (Super Deluxe)",
       "Super Deluxe Male Hostel",
       "Super Deluxe Hostel",
       "Super Deluxe",
       "Male Hall 6",
+      "Male Hostel 6",
       "Abuad Male Hostel 6",
       "MH 6",
       "MH6",
@@ -234,6 +243,7 @@ export const HOSTEL_MAPPINGS = [
       "MMH 1",
       "MMH1",
       "Medical Male Hostel 1",
+      "Male Medical Hostel 1",
       "Male Medical 1",
     ],
   },
@@ -243,6 +253,7 @@ export const HOSTEL_MAPPINGS = [
       "Male Medical Hall 2",
       "MMH 2",
       "MMH2",
+      "Male Medical Hostel 2",
       "Medical Male Hostel 2",
       "Male Medical 2",
     ],
@@ -253,24 +264,21 @@ export const HOSTEL_MAPPINGS = [
       "Male Medical Hall 3",
       "MMH 3",
       "MMH3",
+      "Male Medical Hostel 3",
       "Medical Male Hostel 3",
       "Male Medical 3",
     ],
   },
 ];
 
-/**
- * Array of all display options (canonical names) for form autocomplete.
- */
 export const ABUAD_HOSTELS = HOSTEL_MAPPINGS.map((h) => h.canonical);
 
 /**
- * Normalizes any user search or raw PDF/OCR string to its official canonical name.
+ * Normalizes user input or OCR text to the official canonical hostel name.
  */
 export function normalizeHostelName(rawInput) {
-  if (!rawInput) return "";
+  if (!rawInput || typeof rawInput !== "string") return "";
 
-  // Strip brackets, special characters, and collapse spaces
   const cleanStr = (s) =>
     s
       .toLowerCase()
@@ -279,8 +287,9 @@ export function normalizeHostelName(rawInput) {
       .trim();
 
   const target = cleanStr(rawInput);
+  if (!target) return "";
 
-  // 1. Direct match on canonical or aliases
+  // 1. Direct exact match (canonical or alias)
   for (const item of HOSTEL_MAPPINGS) {
     if (cleanStr(item.canonical) === target) return item.canonical;
     if (item.aliases.some((a) => cleanStr(a) === target)) {
@@ -288,13 +297,22 @@ export function normalizeHostelName(rawInput) {
     }
   }
 
-  // 2. Substring / Inclusion fallback
-  for (const item of HOSTEL_MAPPINGS) {
-    for (const alias of item.aliases) {
-      const aliasClean = cleanStr(alias);
-      if (target.includes(aliasClean) || aliasClean.includes(target)) {
-        return item.canonical;
-      }
+  // 2. Build flat list of all aliases sorted by length descending
+  const candidates = [];
+  HOSTEL_MAPPINGS.forEach((item) => {
+    candidates.push({ canonical: item.canonical, text: cleanStr(item.canonical) });
+    item.aliases.forEach((alias) => {
+      candidates.push({ canonical: item.canonical, text: cleanStr(alias) });
+    });
+  });
+  candidates.sort((a, b) => b.text.length - a.text.length);
+
+  // 3. Substring matching: target contains the full alias with word boundary
+  for (const candidate of candidates) {
+    if (candidate.text.length < 3) continue; // ignore tiny aliases in loose search
+    const regex = new RegExp(`\\b${candidate.text}\\b`, "i");
+    if (regex.test(target)) {
+      return candidate.canonical;
     }
   }
 
