@@ -33,8 +33,9 @@ export const HOSTEL_MAPPINGS = [
   {
     canonical: "Abuad Female Hostel 3",
     aliases: [
-      "Female Hall 3 (New Female Hostel 1)",
       "Female Hall 3 (NFH 1)",
+      "Female Hall 3 (New Female Hostel 1)",
+      "Female Hall 3(New Female Hostel 1)",
       "Female Hall 3",
       "New Female Hostel 1",
       "NFH 1",
