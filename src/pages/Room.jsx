@@ -7,7 +7,7 @@ import {
   HiArrowRight, HiUserGroup, HiSparkles 
 } from "react-icons/hi2";
 import { db, auth } from "../firebase";
-import { normalizeHostelName } from "../utils/hostelData";
+import { normalizeHostelName, HOSTEL_MAPPINGS } from "../utils/hostelData";
 
 export default function Rooms() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +53,7 @@ export default function Rooms() {
       }
     );
     return () => unsubscribe();
-  }, [user]); // Re-run when the user object is ready
+  }, [user]);
 
   // Aggregate room map (Hostel + Room unique grouping with normalization)
   const allRooms = useMemo(() => {
@@ -80,7 +80,7 @@ export default function Rooms() {
     return Array.from(roomMap.values());
   }, [allEntries]);
 
-  // Filter rooms by active tab & search query
+  // Filter rooms by active tab & alias-aware search query
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
@@ -91,10 +91,25 @@ export default function Rooms() {
 
       // 2. Search query filter
       if (!q) return true;
-      return (
-        room.room.toLowerCase().includes(q) ||
-        room.hostel.toLowerCase().includes(q)
+
+      // Check if room number matches
+      if (room.room.toLowerCase().includes(q)) return true;
+
+      // Check if canonical hostel name matches
+      if (room.hostel.toLowerCase().includes(q)) return true;
+
+      // Check if the query matches any alias/nickname of this hostel (e.g. "wema", "jamaica", "nfh 3")
+      const matchedMapping = HOSTEL_MAPPINGS.find(
+        (h) => h.canonical.toLowerCase() === room.hostel.toLowerCase()
       );
+      if (matchedMapping) {
+        const matchesAlias = matchedMapping.aliases.some((alias) =>
+          alias.toLowerCase().includes(q)
+        );
+        if (matchesAlias) return true;
+      }
+
+      return false;
     });
   }, [allRooms, searchQuery, activeFilter]);
 
