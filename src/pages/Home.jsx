@@ -616,14 +616,14 @@ export default function Home() {
                                 {/* Matric No & Department */}
                                 <label className="flex flex-col gap-1.5">
                                     <span className="text-xs font-semibold text-slate-700">Matric No</span>
-                                    <input type="text" placeholder="e.g. 22/ENG02/036"
+                                    <input type="text" placeholder="Your Matric Number"
                                         value={form.matricNo} onChange={(e) => setForm((f) => ({ ...f, matricNo: e.target.value }))}
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all uppercase" />
                                 </label>
 
                                 <label className="flex flex-col gap-1.5">
                                     <span className="text-xs font-semibold text-slate-700">Department / Course</span>
-                                    <input type="text" placeholder="e.g. Computer Engineering"
+                                    <input type="text" placeholder="e.g. Computer Science"
                                         value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
                                 </label>
@@ -631,7 +631,7 @@ export default function Home() {
                                 {/* Level & Capacity */}
                                 <label className="flex flex-col gap-1.5">
                                     <span className="text-xs font-semibold text-slate-700">Level</span>
-                                    <input type="text" placeholder="e.g. 500"
+                                    <input type="text" placeholder="e.g. 100"
                                         value={form.level} onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
                                         className="p-3.5 text-sm bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
                                 </label>
