@@ -8,6 +8,7 @@ export const HOSTEL_MAPPINGS = [
     aliases: [
       "Female Hall 1 (ABUAD Female Hostel)",
       "Female Hall 1 (ABUAD Female)",
+      "Female Hall 1 (ABUAD Hostel)",
       "Female Hall 1",
       "Female Hostel 1",
       "ABUAD Female Hostel 1",
