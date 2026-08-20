@@ -4,7 +4,7 @@ import {
   HiMagnifyingGlass, HiArrowRightOnRectangle, HiArrowLeft, 
   HiTrash, HiPlus, HiXMark, HiShieldCheck,
   HiBuildingOffice, HiIdentification, HiPhone,
-  HiChatBubbleLeftEllipsis, HiInbox
+  HiChatBubbleLeftEllipsis, HiInbox, HiFunnel
 } from "react-icons/hi2";
 import { collection, query, orderBy, onSnapshot, getDocs, writeBatch, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
@@ -21,6 +21,8 @@ export default function AdminDashboard() {
 
   const [entries, setEntries] = useState([]);
   const [search, setSearch] = useState("");
+  const [filterEndingWithLetter, setFilterEndingWithLetter] = useState(false);
+  const [filterWithSpace, setFilterWithSpace] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, showToast, clearToast] = useToast();
 
@@ -53,7 +55,6 @@ export default function AdminDashboard() {
   };
 
   const handleClearAll = async () => {
-    // Force the admin to type a specific phrase instead of just clicking "OK"
     const confirmation = window.prompt(
       "CRITICAL WARNING: You are about to delete ALL student records.\n\nType 'NUKE DATABASE' (all caps) to confirm:"
     );
@@ -87,7 +88,6 @@ export default function AdminDashboard() {
       const cleanedRoom = addForm.room.trim().toUpperCase();
       const cleanedName = addForm.name.trim();
 
-      // Auto-extract gender to match public app schema
       const derivedGender = cleanedHostel.includes("Female") ? "Female" : 
                             cleanedHostel.includes("Male") ? "Male" : "";
 
@@ -124,11 +124,26 @@ export default function AdminDashboard() {
 
   const filteredEntries = entries.filter((e) => {
     const q = search.toLowerCase().trim();
+    const roomStr = (e.room || "").trim();
+    
+    // 1. Room ending with letter filter check
+    if (filterEndingWithLetter) {
+      const endsWithLetter = /[a-zA-Z]$/.test(roomStr);
+      if (!endsWithLetter) return false;
+    }
+
+    // 2. Room with space filter check (e.g. "A 101")
+    if (filterWithSpace) {
+      const hasSpace = /\s/.test(roomStr);
+      if (!hasSpace) return false;
+    }
+
+    // 3. Search query check
     if (!q) return true;
     return (
       e.name?.toLowerCase().includes(q) ||
       e.hostel?.toLowerCase().includes(q) ||
-      e.room?.toLowerCase().includes(q) ||
+      roomStr.toLowerCase().includes(q) ||
       e.matricNo?.toLowerCase().includes(q)
     );
   });
@@ -167,11 +182,11 @@ export default function AdminDashboard() {
 
         {/* Command Toolbar */}
         <div className="bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:max-w-lg">
+          <div className="relative w-full md:max-w-sm">
             <HiMagnifyingGlass className="h-5 w-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by student name, hostel, room, or matric..."
+              placeholder="Search name, hostel, room, or matric..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full p-3.5 pl-11 text-sm bg-white/90 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 placeholder-slate-400 transition-all shadow-xs"
@@ -183,16 +198,54 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="flex w-full md:w-auto gap-3">
+          <div className="flex flex-wrap w-full md:w-auto gap-2 items-center">
+            {/* Filter: Rooms Ending with Letter */}
+            <button
+              type="button"
+              onClick={() => setFilterEndingWithLetter((prev) => !prev)}
+              className={`px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 shrink-0 ${
+                filterEndingWithLetter
+                  ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <HiFunnel className="text-sm" />
+              <span>Ends with Letter</span>
+              {filterEndingWithLetter && (
+                <span className="bg-white/20 text-white px-1.5 py-0.5 rounded text-[9px] font-extrabold">
+                  Active
+                </span>
+              )}
+            </button>
+
+            {/* Filter: Rooms with Space */}
+            <button
+              type="button"
+              onClick={() => setFilterWithSpace((prev) => !prev)}
+              className={`px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 shrink-0 ${
+                filterWithSpace
+                  ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <HiFunnel className="text-sm" />
+              <span>With Space</span>
+              {filterWithSpace && (
+                <span className="bg-white/20 text-white px-1.5 py-0.5 rounded text-[9px] font-extrabold">
+                  Active
+                </span>
+              )}
+            </button>
+
             <button onClick={() => setShowAddForm((v) => !v)}
-              className="flex-1 md:flex-none inline-flex justify-center items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all">
+              className="inline-flex justify-center items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all">
               {showAddForm ? <HiXMark className="text-base" /> : <HiPlus className="text-base" />}
-              <span>{showAddForm ? "Cancel Entry" : "Manual Entry"}</span>
+              <span>{showAddForm ? "Cancel" : "Manual Entry"}</span>
             </button>
             
             {entries.length > 0 && (
               <button onClick={handleClearAll}
-                className="flex-1 md:flex-none inline-flex justify-center items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all">
+                className="inline-flex justify-center items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all">
                 <HiTrash className="text-base" /><span>Clear All</span>
               </button>
             )}
@@ -298,7 +351,7 @@ export default function AdminDashboard() {
               <HiInbox className="text-3xl" />
             </div>
             <p className="text-base font-bold text-slate-900">No records found</p>
-            <p className="text-xs text-slate-500 mt-1">Try adjusting your search criteria.</p>
+            <p className="text-xs text-slate-500 mt-1">Try adjusting your search criteria or active filters.</p>
           </div>
         ) : (
           <div className="space-y-3">
