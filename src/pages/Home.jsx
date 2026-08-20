@@ -382,7 +382,7 @@ export default function Home() {
                                 Official ABUAD Roommate Finder
                             </div>
 
-                            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] text-slate-900">
+                            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-slate-900">
                                 Know Your Roommates <br />
                                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 bg-clip-text text-transparent">
                                     Before Resumption
