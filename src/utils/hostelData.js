@@ -193,6 +193,7 @@ export const HOSTEL_MAPPINGS = [
     canonical: "Male Hall 5",
     aliases: [
       "Male Hall 5",
+      "Male Hall 5 (New Male Hostel 2)",
       "Male Hostel 5",
       "Abuad Male Hostel 5",
       "MH 5",
