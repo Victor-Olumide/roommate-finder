@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+@theme{
+    --font-sans: "Raleway", sans-serif;
+}
 
 @keyframes float {
   0%, 100% {
