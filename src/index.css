@@ -1,8 +1,8 @@
 @import "tailwindcss";
-@import "@fontsource-variable/raleway";
+@import "@fontsource-variable/inter";
 
 @theme {
-  --font-sans: "Raleway Variable", sans-serif;
+  --font-sans: "Inter Variable", sans-serif;
 }
 
 @keyframes float {
